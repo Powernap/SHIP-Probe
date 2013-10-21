@@ -1,7 +1,7 @@
 (function(exports){
 (function(exports){
 probe = {version: "0.0.1"}; // semver
-probe.loadCSVFile = function(csvFilePath, categoriesFilePath) {
+probe.loadCSVFile = function(csvFilePath, categoriesFilePath, callback) {
 	d3.csv(csvFilePath, function(csvContent) {
 		d3.json(categoriesFilePath, function(description) {
 			// Create Array of all Dimensions with necessary Information
@@ -25,17 +25,19 @@ probe.loadCSVFile = function(csvFilePath, categoriesFilePath) {
 						data[key].data.push(currentValue);
 				}
 			}
-			return data;
+			callback(data);
 		});
 	});
 }
 
-probe.exportAsCSV = function(data, removeInvalidData) {
+probe.exportAsCSV = function(data, removeInvalidData, invalidEntryPlaceholder) {
 	var dataArray = undefined;
 	if (removeInvalidData == true)
 		dataArray = d3.values(removeFaultyData(data));
 	else
 		dataArray = d3.values(data);
+	if (invalidEntryPlaceholder == undefined) // Default Placeholder
+		invalidEntryPlaceholder = '?';
 
 	var content = '';
 	// Calculate first line
@@ -47,19 +49,15 @@ probe.exportAsCSV = function(data, removeInvalidData) {
 			content += ',';
 	}
 	// Add the rest of the file
-	//var numberOfElements = dataArray[0].data.length;
 	for (var currentElement in dataArray[0].data) { // new line for each subject
-		// for (var j = 0 ; j < dataArray.length; j++) { // parse all variables
 		for (var key in dataArray) {
 			var currentValue = dataArray[key].data[currentElement].toString().split(',').join('.'); // add i'th element of j'th variable
-			if (i == 0) {
-				console.log(key);
-				console.log(dataArray[key].data[i].toString().replace(',', '.'));
-			}
-			if (currentValue != '9 - noData' && parseFloat(currentValue) < 900 && currentValue.toString() != 'NaN')
+			if (removeInvalidData == false)
+				content += currentValue;
+			else if (currentValue != '9 - noData' && parseFloat(currentValue) < 900 && currentValue.toString() != 'NaN')
 				content += currentValue;
 			else
-				content += '?';
+				content += invalidEntryPlaceholder;
 			if (key == dataArray.length - 1 && currentElement != dataArray[0].length - 1)
 				content += '\n';
 			else
@@ -72,18 +70,22 @@ probe.exportAsCSV = function(data, removeInvalidData) {
 
 function removeFaultyData(data) {
 	// Clone Object
-	var dataCopy = (JSON.parse(JSON.stringify(data)));
+	var dataCopy = (JSON.parse(JSON.stringify(data))); // Note: This overwrites NaN-Values with Null!
 	for (key in dataCopy) {
 		var currentElement = dataCopy[key];
 		currentElement.invalidIndices = new Array();
 		for (var j = 0; j < currentElement.data.length; j++) {
 			var currentValue = currentElement.data[j];
-			if (currentValue == '9 - noData' || parseFloat(currentValue) > 900 || currentValue.toString() == 'NaN') {
-				currentElement.invalidIndices[j] = true;
+			if (currentValue == null) { // to fix NaNs
+				currentValue = NaN;
+				currentElement.data[j] = NaN;
 			}
+			if (currentValue == '9 - noData' || parseFloat(currentValue) > 900 || currentValue.toString() == 'NaN')
+				currentElement.invalidIndices[j] = true;
 		}
 	}
 	return dataCopy;
 }
+
 })(this);
 })(this);
