@@ -30,7 +30,7 @@ probe.loadCSVFile = function(csvFilePath, categoriesFilePath, callback) {
 	});
 }
 
-probe.exportAsCSV = function(data, removeInvalidData, invalidEntryPlaceholder) {
+probe.exportAsCSV = function(data, removeInvalidData, invalidEntryPlaceholder, useKeyAsHeader) {
 	var dataArray = undefined;
 	if (removeInvalidData == true)
 		dataArray = d3.values(removeFaultyData(data));
@@ -42,7 +42,10 @@ probe.exportAsCSV = function(data, removeInvalidData, invalidEntryPlaceholder) {
 	var content = '';
 	// Calculate first line
 	for (var i = 0; i < dataArray.length; i++){
-		content += dataArray[i].description.name.split(',').join('.');
+		if (useKeyAsHeader == true)
+			content += dataArray[i].name;
+		else
+			content += dataArray[i].description.name.split(',').join('.');
 		if (i == dataArray.length - 1) // last element, end with newline
 			content += '\n';
 		else
@@ -52,7 +55,7 @@ probe.exportAsCSV = function(data, removeInvalidData, invalidEntryPlaceholder) {
 	for (var currentElement in dataArray[0].data) { // new line for each subject
 		for (var key in dataArray) {
 			var currentValue = dataArray[key].data[currentElement].toString().split(',').join('.'); // add i'th element of j'th variable
-			if (removeInvalidData == false)
+			if (removeInvalidData != true)
 				content += currentValue;
 			else if (currentValue != '9 - noData' && parseFloat(currentValue) < 900 && currentValue.toString() != 'NaN')
 				content += currentValue;
