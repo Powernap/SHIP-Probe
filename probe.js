@@ -19,7 +19,7 @@ probe.loadCSVFile = function(csvFilePath, categoriesFilePath, callback) {
 				var currentElement = csvContent[i];
 				for (key in data) { // parse all data dimensions
 					var currentValue = currentElement[data[key].name];
-					if (data[key].description.scale == 'rational')
+					if (data[key].description.scale == 'metric')
 						data[key].data.push(parseFloat(currentValue.replace(",", ".")));
 					else
 						data[key].data.push(currentValue);
